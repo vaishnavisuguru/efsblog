@@ -35,10 +35,10 @@
             <tr class="bg-info">
                 <th>Customer</th>
                 <th>Type</th>
-                <th>Net Flow</th>
-                <th>Beginning Assets</th>
-                <th>Ending Assets</th>
-                <th>Beginning Date</th>
+                <th>Resultant</th>
+                <th>Initialfunds</th>
+                <th>FinalFunds</th>
+                <th>Start Date</th>
                 <th>End Date</th>
                 <th colspan="3">Actions</th>
             </tr>
@@ -48,11 +48,11 @@
                 <tr>
                     <td>{{ mutualfund.customer }}</td>
                     <td>{{ mutualfund.type }}</td>
-                    <td>{{ mutualfund.net_flow }}</td>
-                    <td>{{ mutualfund.beginning_assets }}</td>
-                    <td>{{ mutualfund.ending_assets }}</td>
-                    <td>{{ mutualfund.created_date }}</td>
-                    <td>{{ mutualfund.end_date_date }}</td>
+                    <td>{{ mutualfund.resultant}}</td>
+                    <td>{{ mutualfund.initialfunds }}</td>
+                    <td>{{ mutualfund.finalfunds }}</td>
+                    <td>{{ mutualfund.start_date }}</td>
+                    <td>{{ mutualfund.end_date }}</td>
                     <td><a href="{% url 'portfolio:mutualfund_edit' pk=mutualfund.pk %}"
                            class="btn btn-warning">Edit</a></td>
                     <td><a href="{% url 'portfolio:mutualfund_delete' pk=mutualfund.pk %}"

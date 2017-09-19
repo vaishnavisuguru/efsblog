@@ -74,10 +74,10 @@ class Stock(models.Model):
 class MutualFunds(models.Model):
     customer = models.ForeignKey(Customer, related_name='mutualfunds')
     type = models.CharField(max_length=50)
-    beginning_assets = models.CharField(max_length=200)
-    ending_assets = models.CharField(max_length=200)
-    net_flow = models.CharField(max_length=200)
-    created_date = models.DateTimeField(default=timezone.now)
+    initialfunds = models.CharField(max_length=200)
+    finalfunds = models.CharField(max_length=200)
+    resultant = models.CharField(max_length=200)
+    start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateField(default=timezone.now, blank=True, null=True)
 
     def created(self):

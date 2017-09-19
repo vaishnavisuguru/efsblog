@@ -21,11 +21,10 @@ class StockList(admin.ModelAdmin):
     ordering = ['customer']
 
 class MutualFundList(admin.ModelAdmin):
-    list_display = ('customer', 'type', 'beginning_assets', 'ending_assets', 'net_flow')
+    list_display = ('customer', 'type', 'initialfunds', 'finalfunds', 'resultant')
     list_filter = ('customer', 'type')
     search_fields = ('customer', 'type')
     ordering = ['customer']
-
 
 admin.site.register(Customer, CustomerList)
 admin.site.register(Investment, InvestmentList)

@@ -144,7 +144,7 @@ def investment_delete(request, pk):
 
 @login_required
 def mutualfund_list(request):
-    mutualfunds = MutualFunds.objects.filter(created_date__lte=timezone.now())
+    mutualfunds = MutualFunds.objects.filter(start_date__lte=timezone.now())
     return render(request, 'portfolio/mutualfund_list.html', {'mutualfunds': mutualfunds})
 
 
@@ -154,9 +154,9 @@ def mutualfund_new(request):
         form = MutualFundForm(request.POST)
         if form.is_valid():
             mutualfund = form.save(commit=False)
-            mutualfund.created_date = timezone.now()
+            mutualfund.start_date = timezone.now()
             mutualfund.save()
-            mutualfunds = MutualFunds.objects.filter(created_date__lte=timezone.now())
+            mutualfunds = MutualFunds.objects.filter(start_date__lte=timezone.now())
             return render(request, 'portfolio/mutualfund_list.html',
                           {'mutualfunds': mutualfunds})
     else:
@@ -175,7 +175,7 @@ def mutualfund_edit(request, pk):
             # investment.customer = investment.id
             mutualfund.updated_date = timezone.now()
             mutualfund.save()
-            mutualfunds = MutualFunds.objects.filter(created_date__lte=timezone.now())
+            mutualfunds = MutualFunds.objects.filter(start_date__lte=timezone.now())
             return render(request, 'portfolio/mutualfund_list.html', {'mutualfunds': mutualfunds})
     else:
         # print("else")
@@ -187,7 +187,7 @@ def mutualfund_edit(request, pk):
 def mutualfund_delete(request, pk):
     mutualfund = get_object_or_404(Stock, pk=pk)
     mutualfund.delete()
-    mutualfunds = MutualFunds.objects.filter(acquired_date__lte=timezone.now())
+    mutualfunds = MutualFunds.objects.filter(start_date__lte=timezone.now())
     return render(request, 'portfolio/mutualfund_list.html', {'mutualfunds': mutualfunds})
 
 
