@@ -71,3 +71,5 @@ wcwidth==0.1.7
 webencodings==0.5.1
 whitenoise==3.3.1
 widgetsnbextension==3.0.8
+
+=ImportJSON("https://efslatest.herokuapp.com/customers_json/", "/name", "noInherit, noTruncate")
