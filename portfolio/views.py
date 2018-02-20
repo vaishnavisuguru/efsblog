@@ -3,9 +3,45 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.shortcuts import redirect
 from django.shortcuts import render, get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import CustomerSerializer
+from django.http import HttpResponse
+from currency_converter import CurrencyConverter
+
+
 from .forms import *
 from .models import *
 
+currency = 'USD'
+value = 0
+toReturn = None
+call_type = 0
+
+def eur(request):
+    global currency, call_type, value
+    currency = 'EUR'
+    call_type = 99
+    portfolio(request, value)
+    call_type = 0
+    return toReturn
+
+def cad(request):
+    global currency, value, call_type
+    currency = 'CAD'
+    call_type = 99
+    portfolio(request,value)
+    call_type = 0
+    return toReturn
+
+def inr(request):
+    global currency, value, call_type
+    currency = 'INR'
+    call_type = 99
+    portfolio(request,value)
+    call_type = 0
+    return toReturn
 
 def home(request):
     return render(request, 'portfolio/home.html',
@@ -190,22 +226,158 @@ def mutualfund_delete(request, pk):
     mutualfunds = MutualFunds.objects.filter(start_date__lte=timezone.now())
     return render(request, 'portfolio/mutualfund_list.html', {'mutualfunds': mutualfunds})
 
+def stock_Converter(stocks, curr):
+     c = CurrencyConverter()
+     for stock in stocks:
+         if curr == 'EUR':
+             stock.purchase_price = c.convert(stock.purchase_price, 'USD', 'EUR')
+             stock.current_stock_price = c.convert(stock.current_stock_price(), 'USD', 'EUR')
+             stock.stock_profit = c.convert(stock.stock_profit, 'USD', 'EUR')
+         elif curr == 'CAD':
+             stock.purchase_price = c.convert(stock.purchase_price, 'USD', 'CAD')
+             stock.current_stock_price = c.convert(stock.current_stock_price(), 'USD', 'CAD')
+             stock.stock_profit = c.convert(stock.stock_profit, 'USD', 'CAD')
+         elif curr == 'INR':
+             stock.purchase_price = c.convert(stock.purchase_price, 'USD', 'INR')
+             stock.current_stock_price = c.convert(stock.current_stock_price(), 'USD', 'INR')
+             stock.stock_profit = c.convert(stock.stock_profit, 'USD', 'INR')
+     return stocks
+
 
 @login_required
 def portfolio(request, pk):
+    global value,currency, toReturn
     customer = get_object_or_404(Customer, pk=pk)
+    value = pk
+    c = CurrencyConverter()
+
     customers = Customer.objects.filter(created_date__lte=timezone.now())
     investments = Investment.objects.filter(customer=pk)
     stocks = Stock.objects.filter(customer=pk)
     sum_recent_value = Investment.objects.filter(customer=pk).aggregate(Sum('recent_value'))
     sum_acquired_value = Investment.objects.filter(customer=pk).aggregate(Sum('acquired_value'))
+    sum_current_stocks_value = 0
+    sum_of_initial_stock_value = 0
+    for stock in stocks:
+        sum_current_stocks_value += stock.current_stock_value()
+        sum_of_initial_stock_value += stock.initial_stock_value()
+    if call_type == 0:
+        return render(request, 'portfolio/portfolio.html', {'customers': customers, 'investments': investments,
+                        	'stocks': stocks,
+                        	'sum_acquired_value': float(sum_acquired_value['acquired_value__sum']),
+                        	'sum_recent_value': float(sum_recent_value['recent_value__sum']),
+                        	'sum_current_stocks_value': float(sum_current_stocks_value),
+                        	'sum_of_initial_stock_value': float(sum_of_initial_stock_value),
+                            'portfolio_initial_investments': float(sum_of_initial_stock_value)+float(sum_acquired_value['acquired_value__sum']),
+                            'portfolio_current_investments': float(sum_current_stocks_value)+float(sum_recent_value['recent_value__sum']),
+                            'grand_total': -(float(sum_of_initial_stock_value)+float(sum_acquired_value['acquired_value__sum']))+(float(sum_current_stocks_value)+float(sum_recent_value['recent_value__sum'])),
+                            'results': float(sum_current_stocks_value)-float(sum_of_initial_stock_value),
+                            'investment_results': float(sum_recent_value['recent_value__sum'])-float(sum_acquired_value['acquired_value__sum']),
+                            })
+    elif currency == 'EUR':
+        toReturn = render(request, 'portfolio/portfolio.html', {'customers': customers, 'investments': investments,
+                                                            'stocks': stock_Converter(stocks, currency),
+                                                            'sum_acquired_value': float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'EUR')),
+                                                            'sum_recent_value': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'EUR')),
+                                                            'sum_current_stocks_value': float(c.convert(sum_current_stocks_value, 'USD', 'EUR')),
+                                                            'sum_of_initial_stock_value': float(
+                                                                c.convert( sum_of_initial_stock_value, 'USD', 'EUR')),
+                                                            'portfolio_initial_investments': float(c.convert(sum_of_initial_stock_value, 'USD', 'EUR')) + float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'EUR')),
+                                                            'portfolio_current_investments': float(c.convert(sum_current_stocks_value, 'USD', 'EUR')) + float(c.convert(sum_recent_value['recent_value__sum'], 'USD', 'EUR')),
+                                                            'grand_total': (float(c.convert(sum_of_initial_stock_value, 'USD', 'EUR'))) +
+                                                            float(c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'EUR')) +
+                                                                           float(c.convert(sum_current_stocks_value, 'USD', 'EUR')) + float(
+                                                                               c.convert(sum_recent_value['recent_value__sum'], 'USD', 'EUR')),
+                                                            'results': float(c.convert(sum_current_stocks_value, 'USD', 'EUR')) - float(
+                                                                c.convert(sum_of_initial_stock_value, 'USD', 'EUR')),
+                                                            'investment_results': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'EUR') - float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'EUR'))),})
+
+
+    elif currency == 'CAD':
+        toReturn = render(request, 'portfolio/portfolio.html', {'customers': customers, 'investments': investments,
+                                                            'stocks': stock_Converter(stocks, currency),
+                                                            'sum_acquired_value': float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'CAD')),
+                                                            'sum_recent_value': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'CAD')),
+                                                            'sum_current_stocks_value': float(c.convert(sum_current_stocks_value, 'USD', 'CAD')),
+                                                            'sum_of_initial_stock_value': float(
+                                                                c.convert( sum_of_initial_stock_value, 'USD', 'CAD')),
+                                                            'portfolio_initial_investments': float(c.convert(sum_of_initial_stock_value, 'USD', 'CAD')) + float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'CAD')),
+                                                            'portfolio_current_investments': float(c.convert(sum_current_stocks_value, 'USD', 'CAD')
+                                                                ) + float(c.convert(sum_recent_value['recent_value__sum'], 'USD', 'CAD')),
+                                                            'grand_total': (float(c.convert(sum_of_initial_stock_value, 'USD', 'CAD'))) +
+                                                            float(c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'CAD')) +
+                                                                           float(c.convert(sum_current_stocks_value, 'USD', 'CAD')) + float(
+                                                                               c.convert(sum_recent_value['recent_value__sum'], 'USD', 'CAD')),
+                                                            'results': float(c.convert(sum_current_stocks_value, 'USD', 'CAD')) - float(
+                                                                c.convert(sum_of_initial_stock_value, 'USD', 'CAD')),
+                                                            'investment_results': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'CAD') - float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'CAD'))),})
+
+    elif currency == 'INR':
+        toReturn = render(request, 'portfolio/portfolio.html', {'customers': customers, 'investments': investments,
+                                                            'stocks': stock_Converter(stocks, currency),
+                                                            'sum_acquired_value': float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'INR')),
+                                                            'sum_recent_value': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'INR')),
+                                                            'sum_current_stocks_value': float(c.convert(sum_current_stocks_value, 'USD', 'INR')),
+                                                            'sum_of_initial_stock_value': float(
+                                                                c.convert( sum_of_initial_stock_value, 'USD', 'INR')),
+                                                            'portfolio_initial_investments': float(c.convert(sum_of_initial_stock_value, 'USD', 'INR')) + float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'INR')),
+                                                            'portfolio_current_investments': float(c.convert(sum_current_stocks_value, 'USD', 'INR')
+                                                                ) + float(c.convert(sum_recent_value['recent_value__sum'], 'USD', 'INR')),
+                                                            'grand_total': (float(c.convert(sum_of_initial_stock_value, 'USD', 'INR'))) +
+                                                            float(c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'INR')) +
+                                                                           float(c.convert(sum_current_stocks_value, 'USD', 'INR')) + float(
+                                                                               c.convert(sum_recent_value['recent_value__sum'], 'USD', 'INR')),
+                                                            'results': float(c.convert(sum_current_stocks_value, 'USD', 'INR')) - float(
+                                                                c.convert(sum_of_initial_stock_value, 'USD', 'INR')),
+                                                            'investment_results': float(
+                                                                c.convert(sum_recent_value['recent_value__sum'], 'USD', 'INR') - float(
+                                                                c.convert(sum_acquired_value['acquired_value__sum'], 'USD', 'INR'))),})
+
+
 
     return render(request, 'portfolio/portfolio.html', {'customers': customers, 'investments': investments,
                                                         'stocks': stocks,
-                                                        'sum_recent_value': sum_recent_value,
-                                                        'sum_acquired_value': sum_acquired_value, })
+                                                        'sum_acquired_value': float(
+                                                            sum_acquired_value['acquired_value__sum']),
+                                                        'sum_recent_value': float(
+                                                            sum_recent_value['recent_value__sum']),
+                                                        'sum_current_stocks_value': float(sum_current_stocks_value),
+                                                        'sum_of_initial_stock_value': float(sum_of_initial_stock_value),
+                                                        'portfolio_initial_investments': float(
+                                                            sum_of_initial_stock_value) + float(
+                                                            sum_acquired_value['acquired_value__sum']),
+                                                        'portfolio_current_investments': float(
+                                                            sum_current_stocks_value) + float(
+                                                            sum_recent_value['recent_value__sum']),
+                                                        'grand_total': -(float(sum_of_initial_stock_value) + float(
+                                                            sum_acquired_value['acquired_value__sum'])) + (
+                                                                       float(sum_current_stocks_value) + float(
+                                                                           sum_recent_value['recent_value__sum'])),
+                                                        'results': float(sum_current_stocks_value) - float(
+                                                            sum_of_initial_stock_value),
+                                                        'investment_results': float(
+                                                            sum_recent_value['recent_value__sum']) - float(
+                                                            sum_acquired_value['acquired_value__sum']),
+                                                        })
 
 
 
+class CustomerList(APIView):
 
-
+    def get(self,request):
+        customers_json = Customer.objects.all()
+        serializer = CustomerSerializer(customers_json, many=True)
+        return Response(serializer.data)

@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'mathfilters',
     'django.contrib.humanize',
     'portfolio',
+	'rest_framework',
+    'wkhtmltopdf',
 ]
 
 MIDDLEWARE = [
@@ -80,10 +82,10 @@ WSGI_APPLICATION = 'efsblog.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'damo9q9nbusgcu',
-        'USER': 'hgrsoqjamnknwl',
-        'PASSWORD': 'bc0d1631daaa3916cb28c62e7cfc9c542824003970286576c3cdf925f0168c14',
-        'HOST': 'ec2-204-236-239-225.compute-1.amazonaws.com',
+        'NAME': 'd9uie118dnoiv',
+        'USER': 'dlaupxhyemtbzn',
+        'PASSWORD': 'f163338725f2268cbaa0bebf3857e26b7086d8fb10457f0dcc35c25ffa1c3139',
+        'HOST': 'ec2-54-221-234-62.compute-1.amazonaws.com',
         'PORT': '5432',
     }
 }
@@ -151,4 +153,3 @@ try:
     from .local_settings import *
 except ImportError:
     pass
-
